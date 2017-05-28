@@ -61,15 +61,20 @@ class DataLoader(object):
         idx1, idx2 = np.random.choice(self.val_data[true_person_id].shape[0], replace=False, size=(2,))
         test_images = np.asarray([self.val_data[true_person_id][idx1, :, :]] * num_way).\
             reshape(num_way, self.img_size, self.img_size, 1)
-        support_set = self.val_data[person_ids, indices, :, :]
+
+        support_set = np.zeros((num_way, self.img_size, self.img_size))
         support_set[0, :, :] = self.val_data[true_person_id][idx2]
+        for i in range(1, num_way):
+            person_id = int(person_ids[i])
+            idx = int(indices[i])
+            support_set[i, :, :] = self.val_data[person_id][idx]
         support_set = support_set.reshape(num_way, self.img_size, self.img_size, 1)
         pairs = [test_images, support_set]
         targets = np.zeros((num_way,))
         targets[0] = 1
         return pairs, targets
 
-    def test_oneshot(self, model, num_way, num_trials, verbose=0):
+    def test_oneshot(self, model, num_way, num_trials, verbose=False):
         """Test average num_way way oneshot learning accuracy of a siamese neural net over k one-shot tasks"""
         n_correct = 0
         if verbose:

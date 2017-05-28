@@ -4,13 +4,39 @@ from keras.regularizers import l2
 from keras import backend as K
 from keras.optimizers import SGD, Adam
 from keras.losses import binary_crossentropy
-import numpy.random
+import os, numpy.random
 
 
 class SiameseNet(object):
-    def __init__(self, input_size=64):
+    def __init__(self, data_loader, weights_path, input_size=64):
+        self.data_loader = data_loader
+        self.weights_path = weights_path
         self.input_size = input_size
         self.model = self._get_model()
+
+        if os.path.exists(weights_path):
+            print('Found weights file: {}, loading weights'.format(weights_path))
+            self.model.load_weights(weights_path)
+        else:
+            print('Could not find weights file, initialized parameters randomly')
+
+    def train(self, num_batches=900000, starting_batch=0, batch_size=32,
+              loss_every=250, evaluate_every=1000, num_way=40, num_val_trials=10):
+        optimizer = Adam(0.00006)
+        self.model.compile(loss="binary_crossentropy", optimizer=optimizer)
+        best = 10.0
+        for i in range(starting_batch, num_batches):
+            (inputs, targets) = self.data_loader.get_training_batch(batch_size)
+            loss = self.model.train_on_batch(inputs, targets)
+            if i % evaluate_every == 0:
+                val_acc = self.data_loader.test_oneshot(self.model, num_way, num_val_trials, verbose=True)
+                if val_acc >= best:
+                    print("Saving weights to {}".format(self.weights_path))
+                    self.model.save(self.weights_path)
+                    best = val_acc
+
+            if i % loss_every == 0:
+                print("iteration {}, training loss: {:.2f},".format(i, loss))
 
     def _get_model(self):
         input_shape = (self.input_size, self.input_size, 1)
@@ -41,9 +67,6 @@ class SiameseNet(object):
         both = merge([encoded_l, encoded_r], mode=l1_distance, output_shape=lambda x: x[0])
         prediction = Dense(1, activation='sigmoid', kernel_initializer=self._W_init, bias_initializer=self._b_init)(both)
         siamese_net = Model(input=[left_input, right_input], output=prediction)
-
-        optimizer = Adam(0.00006)
-        siamese_net.compile(loss="binary_crossentropy", optimizer=optimizer)
         return siamese_net
 
     def _W_init(self, shape, name=None):
