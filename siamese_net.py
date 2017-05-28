@@ -37,8 +37,8 @@ class SiameseNet(object):
         encoded_l = convnet(left_input)
         encoded_r = convnet(right_input)
         # merge two encoded inputs with the l1 distance between them
-        L1_distance = lambda x: K.abs(x[0] - x[1])
-        both = merge([encoded_l, encoded_r], mode=L1_distance, output_shape=lambda x: x[0])
+        l1_distance = lambda x: K.abs(x[0] - x[1])
+        both = merge([encoded_l, encoded_r], mode=l1_distance, output_shape=lambda x: x[0])
         prediction = Dense(1, activation='sigmoid', kernel_initializer=self._W_init, bias_initializer=self._b_init)(both)
         siamese_net = Model(input=[left_input, right_input], output=prediction)
 
