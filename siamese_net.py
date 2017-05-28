@@ -22,8 +22,6 @@ class SiameseNet(object):
 
     def train(self, num_batches=900000, starting_batch=0, batch_size=32,
               loss_every=250, evaluate_every=1000, num_way=40, num_val_trials=10):
-        optimizer = Adam(0.00006)
-        self.model.compile(loss="binary_crossentropy", optimizer=optimizer)
         best = 10.0
         for i in range(starting_batch, num_batches):
             (inputs, targets) = self.data_loader.get_training_batch(batch_size)
@@ -67,6 +65,10 @@ class SiameseNet(object):
         both = merge([encoded_l, encoded_r], mode=l1_distance, output_shape=lambda x: x[0])
         prediction = Dense(1, activation='sigmoid', kernel_initializer=self._W_init, bias_initializer=self._b_init)(both)
         siamese_net = Model(input=[left_input, right_input], output=prediction)
+
+        optimizer = Adam(0.00006)
+        siamese_net.compile(loss="binary_crossentropy", optimizer=optimizer)
+
         return siamese_net
 
     def _W_init(self, shape, name=None):

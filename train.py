@@ -15,4 +15,4 @@ if __name__ == '__main__':
     data_loader = DataLoader(train_data=train_data, val_data=val_data, img_size=IMG_SIZE,
                              olivetti_faces_data_path='/home/anson/datasets/olivetti')
     s_net = SiameseNet(data_loader=data_loader, weights_path='weights.h5', input_size=IMG_SIZE)
-    s_net.train()
+    s_net.train(starting_batch=2000, num_val_trials=50)
