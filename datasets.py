@@ -1,4 +1,4 @@
-import pickle, os, cv2, numpy as np
+import pickle, os, cv2, sklearn.datasets, numpy as np
 
 
 def scale_crop(img, crop_factor=1.0):
@@ -33,7 +33,7 @@ def scale_crop(img, crop_factor=1.0):
     return img[y:y + h, x:x + w]
 
 
-def get_dataset(path_to_lfw, target_size, min_imgs_per_person=2):
+def get_dataset_lfw(path_to_lfw, target_size, min_imgs_per_person=2):
     """Returns LFW data
 
     Args:
@@ -71,3 +71,29 @@ def get_dataset(path_to_lfw, target_size, min_imgs_per_person=2):
     pickle.dump(data, open(lfw_pickle_filename, 'wb'))
     return data
 
+
+def get_dataset_olivetti(path_to_olivetti, target_size):
+    """Returns olivetti data
+
+    Args:
+        path_to_olivetti (str): path to olivetti dataset folder
+        target_size (int): desired image size of resized images
+
+    Returns:
+        data (numpy 4d array of size 400 x target_size x target_size)
+    """
+    olivetti_pickle_filename = os.path.join(path_to_olivetti, 'olivetti_pickle.p')
+    if os.path.exists(olivetti_pickle_filename):
+        return pickle.load(open(olivetti_pickle_filename, 'rb'))
+
+    print('Cannot find pickle file of olivetti, constructing...')
+    olivetti_imgs = sklearn.datasets.fetch_olivetti_faces(data_home=path_to_olivetti)['images']
+    num_imgs = olivetti_imgs.shape[0]
+    data = np.zeros((num_imgs, target_size, target_size))
+
+    for i, img in enumerate(olivetti_imgs):
+        resized_img = cv2.resize(img, (target_size, target_size))
+        data[i, ...] = resized_img
+
+    pickle.dump(data, open(olivetti_pickle_filename, 'wb'))
+    return data
