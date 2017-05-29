@@ -21,6 +21,7 @@ if __name__ == '__main__':
                              olivetti_data=olivetti_ds)
     s_net = SiameseNet(data_loader=data_loader, weights_path='weights.h5', input_size=IMG_SIZE)
 
+    # Testing model on images of same person
     f, axarr = plt.subplots(1, 2)
     axarr[0].imshow(olivetti_ds[0, 0, ...], cmap='gray')
     axarr[1].imshow(olivetti_ds[0, 1, ...], cmap='gray')
@@ -29,6 +30,7 @@ if __name__ == '__main__':
     img2 = np.reshape(olivetti_ds[0, 1, ...], (1, IMG_SIZE, IMG_SIZE, 1))
     print(s_net.test(img1, img2))
 
+    # Testing model on images of different people
     f, axarr = plt.subplots(1, 2)
     axarr[0].imshow(olivetti_ds[0, 0, ...], cmap='gray')
     axarr[1].imshow(olivetti_ds[1, 0, ...], cmap='gray')
@@ -36,5 +38,3 @@ if __name__ == '__main__':
     img1 = np.reshape(olivetti_ds[0, 0, ...], (1, IMG_SIZE, IMG_SIZE, 1))
     img2 = np.reshape(olivetti_ds[1, 0, ...], (1, IMG_SIZE, IMG_SIZE, 1))
     print(s_net.test(img1, img2))
-
-
