@@ -80,7 +80,7 @@ def get_dataset_olivetti(path_to_olivetti, target_size):
         target_size (int): desired image size of resized images
 
     Returns:
-        data (numpy 4d array of size 400 x target_size x target_size)
+        data (numpy 4d array of size 40 x 10 x target_size x target_size)
     """
     olivetti_pickle_filename = os.path.join(path_to_olivetti, 'olivetti_pickle.p')
     if os.path.exists(olivetti_pickle_filename):
@@ -88,12 +88,13 @@ def get_dataset_olivetti(path_to_olivetti, target_size):
 
     print('Cannot find pickle file of olivetti, constructing...')
     olivetti_imgs = sklearn.datasets.fetch_olivetti_faces(data_home=path_to_olivetti)['images']
-    num_imgs = olivetti_imgs.shape[0]
-    data = np.zeros((num_imgs, target_size, target_size))
+    data = np.zeros((40, 10, target_size, target_size))
 
     for i, img in enumerate(olivetti_imgs):
+        person_id = i // 10
+        idx = i % 10
         resized_img = cv2.resize(img, (target_size, target_size))
-        data[i, ...] = resized_img
+        data[person_id, idx, ...] = resized_img
 
     pickle.dump(data, open(olivetti_pickle_filename, 'wb'))
     return data

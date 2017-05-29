@@ -1,14 +1,14 @@
 import numpy as np
-import sklearn.datasets
 
 
 class DataLoader(object):
+    # TODO: documentation
     """For loading batches and testing tasks to a siamese net"""
 
-    def __init__(self, train_data, val_data, img_size, olivetti_faces_data_path):
+    def __init__(self, train_data, val_data, img_size, olivetti_data):
         self.train_data = train_data
         self.val_data = val_data
-        self.olivetti_faces = sklearn.datasets.fetch_olivetti_faces(data_home=olivetti_faces_data_path)
+        self.olivetti_data = olivetti_data
         
         self.num_people_train = len(train_data)
         self.num_people_val = len(val_data)
@@ -48,7 +48,8 @@ class DataLoader(object):
             pairs[1][i, :, :, :] = self.train_data[person_id_2][idx_2].reshape(self.img_size, self.img_size, 1)
         return pairs, targets
 
-    def make_oneshot_task(self, num_way):
+    def get_oneshot_pairs_validation(self, num_way):
+        # TODO: documentation
         """Create pairs of test image, support set for testing num_way way one-shot learning. """
         person_ids = np.random.choice(self.num_people_val, size=(num_way,), replace=False)
         indices = np.zeros((num_way,))
@@ -70,21 +71,51 @@ class DataLoader(object):
             support_set[i, :, :] = self.val_data[person_id][idx]
         support_set = support_set.reshape(num_way, self.img_size, self.img_size, 1)
         pairs = [test_images, support_set]
-        targets = np.zeros((num_way,))
-        targets[0] = 1
-        return pairs, targets
+        return pairs
 
-    def test_oneshot(self, model, num_way, num_trials, verbose=False):
-        """Test average num_way way oneshot learning accuracy of a siamese neural net over k one-shot tasks"""
-        n_correct = 0
+    def get_oneshot_pairs_testing(self):
+        # TODO: documentation
+        """Create pairs of test image, support set for testing num_way way one-shot learning. """
+        person_ids = np.arange(0, 40)
+        np.random.shuffle(person_ids)
+
+        true_person_id = person_ids[0]
+        # get 2 indices of images of same person
+        idx1, idx2 = np.random.choice(10, replace=False, size=(2,))
+        test_images = np.asarray([self.olivetti_data[true_person_id, idx1, :, :]] * 40).\
+            reshape(40, self.img_size, self.img_size, 1)
+
+        support_set = np.zeros((40, self.img_size, self.img_size))
+        support_set[0, :, :] = self.olivetti_data[true_person_id, idx2]
+        for i in range(1, 40):
+            support_set[i, :, :] = self.olivetti_data[person_ids[i], idx2]
+        support_set = support_set.reshape(40, self.img_size, self.img_size, 1)
+        pairs = [test_images, support_set]
+        return pairs
+
+    def test_oneshot(self, model, data_type, num_way=40, num_trials=50, verbose=False):
+        # TODO: documentation
+        """Test average num_way way oneshot learning accuracy of a siamese neural net over num_trials one-shot tasks
+        
+        Args:
+            model (SiameseNet object): SiameseNet model
+            num_way (int): number of images to 
+            data_type (str): 'val' or 'test'
+
+        Returns:
+            Average accuracy of trials on validation set
+                    
+        """
+        correct_count = 0
         if verbose:
-            print("Evaluating model on {} unique {} way one-shot learning tasks ...".format(num_trials, num_way))
+            print("Evaluating model on {} one-shot tasks ...".format(data_type))
         for i in range(num_trials):
-            inputs, targets = self.make_oneshot_task(num_way=num_way)
+            inputs = self.get_oneshot_pairs_validation(num_way=num_way) \
+                if data_type == 'val' else self.get_oneshot_pairs_testing()
             probs = model.predict(inputs)
             if np.argmax(probs) == 0:
-                n_correct += 1
-        percent_correct = (100.0 * n_correct / num_trials)
+                correct_count += 1
+        percent_correct = (100.0 * correct_count / num_trials)
         if verbose:
             print("Got an average of {}% {} way one-shot learning accuracy".format(percent_correct, num_way))
         return percent_correct

@@ -21,17 +21,23 @@ class SiameseNet(object):
             print('Could not find weights file, initialized parameters randomly')
 
     def train(self, num_batches=900000, starting_batch=0, batch_size=32,
-              loss_every=250, evaluate_every=1000, num_way=40, num_val_trials=10):
+              loss_every=250, evaluate_every=1000, log_every=5000, num_way=40, num_val_trials=50):
         best = 10.0
         for i in range(starting_batch, num_batches):
             (inputs, targets) = self.data_loader.get_training_batch(batch_size)
             loss = self.model.train_on_batch(inputs, targets)
             if i % evaluate_every == 0:
-                val_acc = self.data_loader.test_oneshot(self.model, num_way, num_val_trials, verbose=True)
+                val_acc = self.data_loader.test_oneshot(self.model, data_type='val',
+                                                        num_way=num_way, num_trials=num_val_trials, verbose=True)
                 if val_acc >= best:
                     print("Saving weights to {}".format(self.weights_path))
                     self.model.save(self.weights_path)
                     best = val_acc
+                test_acc = self.data_loader.test_oneshot(self.model, data_type='test', verbose=True)
+
+                if i % log_every == 0:
+                    with open('log.txt', 'a') as file:
+                        file.write('{0}\t{1:.2f}\t{2:.2f}\n'.format(i, val_acc, test_acc))
 
             if i % loss_every == 0:
                 print("iteration {}, training loss: {:.2f},".format(i, loss))
