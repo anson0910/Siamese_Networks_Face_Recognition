@@ -8,10 +8,12 @@ import os, numpy.random
 
 
 class SiameseNet(object):
-    def __init__(self, data_loader, weights_path, input_size=64):
+    def __init__(self, data_loader, weights_path, init_lr=0.00006, input_size=64):
         self.data_loader = data_loader
         self.weights_path = weights_path
+        self.init_lr = init_lr
         self.input_size = input_size
+        self.optimizer = Adam(self.init_lr)
         self.model = self._get_model()
 
         if os.path.exists(weights_path):
@@ -21,8 +23,8 @@ class SiameseNet(object):
             print('Could not find weights file, initialized parameters randomly')
 
     def train(self, num_batches=900000, starting_batch=0, batch_size=32,
-              loss_every=250, evaluate_every=1000, log_every=5000, num_way=40, num_val_trials=50):
-        best = 10.0
+              loss_every=500, evaluate_every=1000, log_every=5000, decrease_every=40000, num_way=40, num_val_trials=50):
+        best = 38.0
         for i in range(starting_batch, num_batches):
             (inputs, targets) = self.data_loader.get_training_batch(batch_size)
             loss = self.model.train_on_batch(inputs, targets)
@@ -41,6 +43,9 @@ class SiameseNet(object):
 
             if i % loss_every == 0:
                 print("iteration {}, training loss: {:.2f},".format(i, loss))
+
+            if i % decrease_every == 0:
+                K.set_value(self.optimizer.lr, self.init_lr * (0.5 ** (i // decrease_every)))
 
     def _get_model(self):
         input_shape = (self.input_size, self.input_size, 1)
@@ -72,8 +77,7 @@ class SiameseNet(object):
         prediction = Dense(1, activation='sigmoid', kernel_initializer=self._W_init, bias_initializer=self._b_init)(both)
         siamese_net = Model(input=[left_input, right_input], output=prediction)
 
-        optimizer = Adam(0.00006)
-        siamese_net.compile(loss="binary_crossentropy", optimizer=optimizer)
+        siamese_net.compile(loss="binary_crossentropy", optimizer=self.optimizer)
 
         return siamese_net
 

@@ -2,8 +2,21 @@ import numpy as np
 
 
 class DataLoader(object):
-    # TODO: documentation
-    """For loading batches and testing tasks to a siamese net"""
+    """Object for loading batches and testing tasks to a siamese net
+
+    Args:
+        train_data, val_data (list of numpy 3d arrays):
+            training and validation data, 
+            where data[i] stores numpy 3d array of size (number of images, image_size, image_size)
+        img_size (int): desired image size of loaded data
+        olivetti_data (numpy 4d array of size 40 x 10 x image_size x image_size)
+
+    Attributes:
+        num_people_train (int): number of different people in training set.
+        num_people_val (int): number of different people in validation set.
+        img_size (int): size of images
+
+    """
 
     def __init__(self, train_data, val_data, img_size, olivetti_data):
         self.train_data = train_data
@@ -49,8 +62,18 @@ class DataLoader(object):
         return pairs, targets
 
     def get_oneshot_pairs_validation(self, num_way):
-        # TODO: documentation
-        """Create pairs of test image, support set for testing num_way way one-shot learning. """
+        """Returns oneshot pairs from validation set, with only first pair belonging to same person
+
+        Args:
+            num_way (int): number of different people in support set 
+
+        Returns:
+            test_images (numpy 4d array of size num_way x img_size x img_size x 1):
+                num_way copies of one image
+            support_set (numpy 4d array of size num_way x img_size x img_size x 1):
+                num_way images of different people, with only first image belonging to same person in test_images
+
+        """
         person_ids = np.random.choice(self.num_people_val, size=(num_way,), replace=False)
         indices = np.zeros((num_way,))
         for i, person_id in enumerate(person_ids):
@@ -70,12 +93,18 @@ class DataLoader(object):
             idx = int(indices[i])
             support_set[i, :, :] = self.val_data[person_id][idx]
         support_set = support_set.reshape(num_way, self.img_size, self.img_size, 1)
-        pairs = [test_images, support_set]
-        return pairs
+        return [test_images, support_set]
 
     def get_oneshot_pairs_testing(self):
-        # TODO: documentation
-        """Create pairs of test image, support set for testing num_way way one-shot learning. """
+        """Returns 40 one-shot pairs from test set (olivetti data set), with only first pair belonging to same person
+
+        Returns:
+            test_images (numpy 4d array of size num_way x img_size x img_size x 1):
+                num_way copies of one image
+            support_set (numpy 4d array of size num_way x img_size x img_size x 1):
+                num_way images of different people, with only first image belonging to same person in test_images
+
+        """
         person_ids = np.arange(0, 40)
         np.random.shuffle(person_ids)
 
@@ -90,20 +119,20 @@ class DataLoader(object):
         for i in range(1, 40):
             support_set[i, :, :] = self.olivetti_data[person_ids[i], idx2]
         support_set = support_set.reshape(40, self.img_size, self.img_size, 1)
-        pairs = [test_images, support_set]
-        return pairs
+        return [test_images, support_set]
 
     def test_oneshot(self, model, data_type, num_way=40, num_trials=50, verbose=False):
-        # TODO: documentation
-        """Test average num_way way oneshot learning accuracy of a siamese neural net over num_trials one-shot tasks
+        """Test average num_way way one-shot learning accuracy of a siamese neural net over num_trials one-shot tasks
         
         Args:
             model (SiameseNet object): SiameseNet model
-            num_way (int): number of images to 
-            data_type (str): 'val' or 'test'
+            data_type (str): 'val' or 'test' depending on evaluating validation or test set
+            num_way (int): number of images of different people to run one-shot trial
+            num_trials (int): number of trials to run one-shot trial
+            verbose (bool): whether to turn on verbosity mode                         
 
         Returns:
-            Average accuracy of trials on validation set
+            Average accuracy of one-shot trials
                     
         """
         correct_count = 0
