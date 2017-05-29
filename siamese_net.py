@@ -52,7 +52,9 @@ class SiameseNet(object):
             num_trials (int): number of trials to run one-shot trial
 
         """
-        best = 38.0
+        best = 40.0
+        K.set_value(self.optimizer.lr, self.init_lr * (0.5 ** (starting_batch // decrease_every)))
+
         for i in range(starting_batch, num_batches):
             (inputs, targets) = self.data_loader.get_training_batch(batch_size)
             loss = self.model.train_on_batch(inputs, targets)
@@ -74,6 +76,19 @@ class SiameseNet(object):
 
             if i % decrease_every == 0:
                 K.set_value(self.optimizer.lr, self.init_lr * (0.5 ** (i // decrease_every)))
+
+    def test(self, img1, img2):
+        """Perform testing on 2 images
+
+        Args:
+            img1, img2 (numpy 2d arrays): images to compare
+        
+        Returns:
+            True if model predicts 2 images to belong to same person
+
+        """
+        prob = self.model.predict([img1, img2])
+        return prob >= 0.9
 
     def _get_model(self):
         input_shape = (self.input_size, self.input_size, 1)
