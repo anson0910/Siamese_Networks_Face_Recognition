@@ -8,6 +8,20 @@ import os, numpy.random
 
 
 class SiameseNet(object):
+    """Siamese net
+
+    Args:
+        data_loader (DataLoader object):  
+        weights_path (str): path to file storing weights
+        init_lr (float): initial learning rate
+        input_size (int): input image size
+
+    Attributes:
+        optimizer (Keras optimizer):
+        model (Keras model):
+        
+    """
+
     def __init__(self, data_loader, weights_path, init_lr=0.00006, input_size=64):
         self.data_loader = data_loader
         self.weights_path = weights_path
@@ -23,14 +37,28 @@ class SiameseNet(object):
             print('Could not find weights file, initialized parameters randomly')
 
     def train(self, num_batches=900000, starting_batch=0, batch_size=32,
-              loss_every=500, evaluate_every=1000, log_every=5000, decrease_every=40000, num_way=40, num_val_trials=50):
+              loss_every=500, evaluate_every=1000, log_every=5000, decrease_every=40000, num_way=40, num_trials=50):
+        """Perform training on model
+
+        Args:
+            num_batches (int): total number of batches to train
+            starting_batch (int): starting batch number
+            batch_size (int): size of batch
+            loss_every (int): number of batches between printing training loss
+            evaluate_every (int): number of batches between performing evaluation on validation and test data
+            log_every (int): number of batches between writing log data to file
+            decrease_every (int): number of batches between decreasing learning rate
+            num_way (int): number of different people in support set of one-shot evaluation
+            num_trials (int): number of trials to run one-shot trial
+
+        """
         best = 38.0
         for i in range(starting_batch, num_batches):
             (inputs, targets) = self.data_loader.get_training_batch(batch_size)
             loss = self.model.train_on_batch(inputs, targets)
             if i % evaluate_every == 0:
                 val_acc = self.data_loader.test_oneshot(self.model, data_type='val',
-                                                        num_way=num_way, num_trials=num_val_trials, verbose=True)
+                                                        num_way=num_way, num_trials=num_trials, verbose=True)
                 if val_acc >= best:
                     print("Saving weights to {}".format(self.weights_path))
                     self.model.save(self.weights_path)
